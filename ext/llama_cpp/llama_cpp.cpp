@@ -982,10 +982,10 @@ private:
     const llama_token token = NUM2INT(token_);
     LLaMAModelWrapper* ptr = get_llama_model(self);
     std::vector<char> result(8, 0);
-    const int n_tokens = llama_token_to_str_with_model(ptr->model, token, result.data(), result.size());
+    const int n_tokens = llama_token_to_piece_with_model(ptr->model, token, result.data(), result.size());
     if (n_tokens < 0) {
       result.resize(-n_tokens);
-      const int check = llama_token_to_str_with_model(ptr->model, token, result.data(), result.size());
+      const int check = llama_token_to_piece_with_model(ptr->model, token, result.data(), result.size());
       if (check != -n_tokens) {
         rb_raise(rb_eRuntimeError, "failed to convert");
         return Qnil;
@@ -1043,7 +1043,7 @@ private:
   static VALUE _llama_model_get_model_type(VALUE self) {
     LLaMAModelWrapper* ptr = get_llama_model(self);
     char buf[128];
-    ::llama_model_type(ptr->model, buf, sizeof(buf));
+    ::llama_model_desc(ptr->model, buf, sizeof(buf));
     return rb_str_new_cstr(buf);
   }
 };
@@ -1575,10 +1575,10 @@ private:
     }
     const llama_token token = NUM2INT(token_);
     std::vector<char> result(8, 0);
-    const int n_tokens = llama_token_to_str(ptr->ctx, token, result.data(), result.size());
+    const int n_tokens = llama_token_to_piece(ptr->ctx, token, result.data(), result.size());
     if (n_tokens < 0) {
       result.resize(-n_tokens);
-      const int check = llama_token_to_str(ptr->ctx, token, result.data(), result.size());
+      const int check = llama_token_to_piece(ptr->ctx, token, result.data(), result.size());
       if (check != -n_tokens) {
         rb_raise(rb_eRuntimeError, "failed to convert");
         return Qnil;
