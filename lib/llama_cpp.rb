@@ -89,6 +89,7 @@ module LLaMACpp
         last_n_tokens.push(id)
 
         embd.push(id)
+        n_consumed += 1
         n_remain -= 1
       else
         while embd_input.size > n_consumed
@@ -107,7 +108,7 @@ module LLaMACpp
         output << t
       end
 
-      if !streaming_callback.nil? && !out_t.empty?
+      if !streaming_callback.nil? && !out_t.empty? && embd_input.size < n_consumed
         streaming_callback.call(out_t.join)
       end
       
