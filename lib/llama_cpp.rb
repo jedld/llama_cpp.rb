@@ -27,11 +27,12 @@ module LLaMACpp
   # @param tfs_z [Float] The z parameter for tail-free sampling.
   # @param typical_p [Float] The probability for typical sampling.
   # @param temperature [Float] The temperature for temperature sampling.
+  # @param streaming_callback [Block] A callback to stream incoming tokens to
   # @return [String]
   def generate(context, prompt, # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/ParameterLists, Metrics/PerceivedComplexity
                n_predict: 128, n_threads: 1, n_keep: 10, n_batch: 512, repeat_last_n: 64,
                repeat_penalty: 1.1, frequency: 0.0, presence: 0.0, top_k: 40,
-               top_p: 0.95, tfs_z: 1.0, typical_p: 1.0, temperature: 0.8)
+               top_p: 0.95, tfs_z: 1.0, typical_p: 1.0, temperature: 0.8, streaming_callback: nil)
     raise ArgumentError, 'context must be an instance of LLaMACpp::Context' unless context.is_a?(LLaMACpp::Context)
     raise ArgumentError, 'prompt must be a String' unless prompt.is_a?(String)
 
@@ -99,8 +100,17 @@ module LLaMACpp
         end
       end
 
-      embd.each { |token| output << context.token_to_str(token) }
+      out_t = []
+      embd.each do |token|
+        t = context.token_to_str(token)
+        out_t << t
+        output << t
+      end
 
+      if !streaming_callback.nil? && !out_t.empty?
+        streaming_callback.call(out_t.join)
+      end
+      
       break if !embd.empty? && embd[-1] == context.token_eos
     end
 
