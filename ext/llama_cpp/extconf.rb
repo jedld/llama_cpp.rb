@@ -8,8 +8,15 @@ abort 'libstdc++ is not found.' unless have_library('stdc++')
 $srcs = %w[ggml.c ggml-alloc.c llama.cpp llama_cpp.cpp]
 $srcs << 'ggml-opencl.cpp' if with_config('clblast')
 $srcs << 'ggml-mpi.c' if with_config('mpi')
-$CFLAGS << ' -w -DNDEBUG'
-$CXXFLAGS << ' -std=c++11 -DNDEBUG'
+
+if with_config('llama_fast')
+  $OPT  = ' -Ofast'
+else
+  $OPT  = ' -O3'
+end
+
+$CFLAGS << $OPT << ' -w -DNDEBUG'
+$CXXFLAGS << $OPT << ' -std=c++11 -DNDEBUG'
 $INCFLAGS << ' -I$(srcdir)/src'
 $VPATH << '$(srcdir)/src'
 
@@ -22,6 +29,12 @@ unless with_config('no_k_quants')
   $CFLAGS << ' -DGGML_USE_K_QUANTS'
   $CXXFLAGS << ' -DGGML_USE_K_QUANTS'
   $srcs << 'k_quants.c'
+end
+
+
+if with_config('llama_perf')
+  $CFLAGS   << ' -DGGML_PERF'
+  $CXXFLAGS << ' -DGGML_PERF'
 end
 
 if with_config('qkk_64')

@@ -7,7 +7,7 @@ Gem::Specification.new do |spec|
   spec.version = LLaMACpp::VERSION
   spec.authors = ['yoshoku']
   spec.email = ['yoshoku@outlook.com']
-
+  spec.required_ruby_version = '>= 3.0.0'
   spec.summary = 'Ruby bindings for the llama.cpp.'
   spec.description = 'llama_cpp.rb provides Ruby bindings for the llama.cpp.'
   spec.homepage = 'https://github.com/yoshoku/llama_cpp.rb'
