@@ -117,6 +117,87 @@ module LLaMACpp
 
     output.join.delete_prefix(spaced_prompt).strip
   end
+
+  def continue_generate(context, n_predict: 128, streaming_callback: nil)
+    raise ArgumentError, 'context must be an instance of LLaMACpp::Context' unless context.is_a?(LLaMACpp::Context)
+    raise ArgumentError, 'prompt must be a String' unless prompt.is_a?(String)
+
+    n_ctx = context.n_ctx
+    last_n_tokens = [0] * n_ctx
+
+    embd = []
+    n_consumed = 0
+    n_past = 0
+    n_remain = n_predict
+    n_vocab = context.n_vocab
+    output = []
+
+    while n_remain != 0
+      unless embd.empty?
+        if n_past + embd.size > n_ctx
+          n_left = n_past - n_keep
+          n_past = n_keep
+          embd.insert(0, last_n_tokens[(n_ctx - (n_left / 2) - embd.size)...-embd.size])
+        end
+
+        context.eval(tokens: embd, n_past: n_past, n_threads: n_threads)
+      end
+
+      n_past += embd.size
+      embd.clear
+
+      if embd_input.size <= n_consumed
+        logits = context.logits
+        base_candidates = Array.new(n_vocab) { |i| LLaMACpp::TokenData.new(id: i, logit: logits[i], p: 0.0) }
+        candidates = LLaMACpp::TokenDataArray.new(base_candidates)
+
+        # apply penalties
+        last_n_repeat = [last_n_tokens.size, repeat_last_n, n_ctx].min
+        context.sample_repetition_penalty(candidates, last_n_tokens[-last_n_repeat..], penalty: repeat_penalty)
+        context.sample_frequency_and_presence_penalties(
+          candidates, last_n_tokens[-last_n_repeat..], frequency: frequency, presence: presence
+        )
+
+        # temperature sampling
+        context.sample_top_k(candidates, k: top_k)
+        context.sample_tail_free(candidates, z: tfs_z)
+        context.sample_typical(candidates, prob: typical_p)
+        context.sample_top_p(candidates, prob: top_p)
+        context.sample_temperature(candidates, temperature: temperature)
+        id = context.sample_token(candidates)
+
+        last_n_tokens.shift
+        last_n_tokens.push(id)
+
+        embd.push(id)
+        n_consumed += 1
+        n_remain -= 1
+      else
+        while embd_input.size > n_consumed
+          embd.push(embd_input[n_consumed])
+          last_n_tokens.shift
+          last_n_tokens.push(embd_input[n_consumed])
+          n_consumed += 1
+          break if embd.size >= n_batch
+        end
+      end
+
+      out_t = []
+      embd.each do |token|
+        t = context.token_to_str(token)
+        out_t << t
+        output << t
+      end
+
+      if !streaming_callback.nil? && !out_t.empty? && embd_input.size < n_consumed
+        streaming_callback.call(out_t.join)
+      end
+      
+      break if !embd.empty? && embd[-1] == context.token_eos
+    end
+
+    output.join.delete_prefix(spaced_prompt).strip
+  end
 end
 
 LLaMACpp.backend_init
