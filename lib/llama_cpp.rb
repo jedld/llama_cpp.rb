@@ -58,7 +58,7 @@ module LLaMACpp
           n_past = n_keep
           embd.insert(0, last_n_tokens[(n_ctx - (n_left / 2) - embd.size)...-embd.size])
         end
-
+        puts "embd = #{embd}"
         context.eval(tokens: embd, n_past: n_past, n_threads: n_threads)
       end
 
