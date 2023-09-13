@@ -46,14 +46,17 @@ if with_config('openblas')
   abort 'libopenblas is not found.' unless have_library('openblas')
   abort 'cblas.h is not found.' unless have_header('cblas.h')
 
-  $CFLAGS << ' -DGGML_USE_OPENBLAS'
+  $CXXFLAGS << ' -DGGML_USE_OPENBLAS'
+  $CFLAGS << ' -DGGML_USE_OPENBLAS -I/usr/include/x86_64-linux-gnu/openblas-pthread/'
+  $LDFLAGS << ' -L/usr/lib/x86_64-linux-gnu/openblas-pthread/ -lopenblas'
 end
 
 if with_config('intel_mkl')
   abort 'libopenblas is not found.' unless have_library('openblas')
   abort 'cblas.h is not found.' unless have_header('cblas.h')
-  
-  $CFLAGS << ' -DGGML_USE_OPENBLAS -DGGML_BLAS_USE_MKL'
+  $CXXFLAGS << ' -DGGML_USE_OPENBLAS'
+  $CFLAGS << ' -DGGML_USE_OPENBLAS -DGGML_BLAS_USE_MKL -I/usr/include/x86_64-linux-gnu/openblas-pthread/'
+  $LDFLAGS << ' -L/usr/lib/x86_64-linux-gnu/openblas-pthread/ -lopenblas'
 end
 
 if with_config('blis')
