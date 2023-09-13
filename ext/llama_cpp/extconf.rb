@@ -49,6 +49,10 @@ if with_config('openblas')
   $CFLAGS << ' -DGGML_USE_OPENBLAS'
 end
 
+if with_config('intel_mkl')
+  $CFLAGS << ' -DGGML_USE_OPENBLAS -DGGML_BLAS_USE_MKL'
+end
+
 if with_config('blis')
   abort 'libblis is not found.' unless have_library('blis')
   abort 'cblas.h is not found.' unless have_header('cblas.h')
